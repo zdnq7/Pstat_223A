@@ -1,0 +1,130 @@
+library(gtools)
+q=0.3
+N=4
+S.0=0.042
+u=1.2
+d=2/3
+paths<-permutations(2,4,c(q,1-q),repeats.allowed=TRUE)
+paths<-cbind(rep(S.0,2^4),paths)
+for (i in 1:N){
+  for (j in 1:2^N){
+    if (paths[j,i+1]==q){
+      paths[j,i+1]=paths[j,i]*u
+    }
+    if (paths[j,i+1]==1-q){
+      paths[j,i+1]=paths[j,i]*d
+    }  
+  }
+}
+# discount factor
+D<-vector()
+for (i in 1:nrow(paths)){
+  D[i]<-prod(1/(paths+1)[i,])
+}
+
+paths1<-cbind(paths,D)
+paths2<-permutations(2,4,c(0,1),repeats.allowed=TRUE)
+paths3<-cbind(paths1,paths2)
+
+R0=paths[1,1]
+R1.H<-paths[1,2]
+R1.T<-paths[16,2]
+
+# Bond price
+(B25.HH<-((1+R0)*(1+R1.H))*(0.25*sum(paths3[1:4,6])))
+(B25.TT<-((1+R0)*(1+R1.T))*(0.25*sum(paths3[13:16,6])))
+(B25.HT<-((1+R0)*(1+R1.H))*(0.25*sum(paths3[5:8,6])))
+(B25.TH<-((1+R0)*(1+R1.T))*(0.25*sum(paths3[9:12,6])))
+
+# Yield
+(Y25.HH<-(1/B25.HH)^(1/3)-1)
+(Y25.TT<-(1/B25.TT)^(1/3)-1)
+(Y25.HT<-(1/B25.HT)^(1/3)-1)
+(Y25.TH<-(1/B25.TH)^(1/3)-1)
+
+# expected value
+E<-0.25*(Y25.HH+Y25.TH+Y25.HT+Y25.TT)
+E.2<-0.25*(Y25.HH^2+Y25.TH^2+Y25.HT^2+Y25.TT^2)
+# variance
+Var<-E.2-E^2
+sd<-sqrt(Var);sd
+
+
+
+# 5
+q=0.4 # no meaning, just a indicator of up
+library(gtools)
+N<-10
+U<-round(runif(100))
+paths5<-permutations(2,N,c(q,1-q),repeats.allowed=TRUE)
+paths5<-cbind(rep(0.06,2^N),paths5)
+for (i in 1:N){
+  for (j in 1:2^N){
+    if (paths5[j,i+1]==q){
+      paths5[j,i+1]=paths5[j,i]+0.005
+    }
+    if (paths5[j,i+1]==1-q){
+      paths5[j,i+1]=paths5[j,i]-0.004
+    }  
+  }
+}
+
+D1<-1/((paths5+1)[,1])
+D2<-1/((paths5+1)[,1]*(paths5+1)[,2])
+D3<-1/((paths5+1)[,1]*(paths5+1)[,2]*(paths5+1)[,3])
+D4<-1/((paths5+1)[,1]*(paths5+1)[,2]*(paths5+1)[,3]*(paths5+1)[,4])
+D5<-1/((paths5+1)[,1]*(paths5+1)[,2]*(paths5+1)[,3]*(paths5+1)[,4]*(paths5+1)[,5])
+D6<-1/((paths5+1)[,1]*(paths5+1)[,2]*(paths5+1)[,3]*(paths5+1)[,4]*(paths5+1)[,5]*(paths5+1)[,6])
+D7<-1/((paths5+1)[,1]*(paths5+1)[,2]*(paths5+1)[,3]*(paths5+1)[,4]*(paths5+1)[,5]*(paths5+1)[,6]*(paths5+1)[,7])
+
+paths5.1<-cbind(paths5,cbind(D7,D6,D5,D4,D3,D2,D1))
+
+# a
+B.07<-(1/64)*sum(paths5.1[,8]);B.07
+B.06<-(1/64)*sum(paths5.1[,9]);B.06
+B.05<-(1/64)*sum(paths5.1[,10]);B.05
+B.04<-(1/64)*sum(paths5.1[,11]);B.04
+B.03<-(1/64)*sum(paths5.1[,12]);B.03
+B.02<-(1/64)*sum(paths5.1[,13]);B.02
+B.01<-(1/64)*sum(paths5.1[,14]);B.01
+
+SR.07<-(1-B.07)/sum(B.01,B.02,B.03,B.04,B.05,B.06,B.07);SR.07  # swap rate from t=2 to t=7
+
+# b
+R0<-0.03
+R1.H<-0.038
+R1.T<-0.028
+# HH
+B.27.HH<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[1:16,8]);B.27.HH
+B.26.HH<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[1:16,9]);B.26.HH
+B.25.HH<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[1:16,10]);B.25.HH
+B.24.HH<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[1:16,11]);B.24.HH
+B.23.HH<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[1:16,12]);B.23.HH
+SR.27.HH<-(1-B.27.HH)/sum(B.23.HH,B.24.HH,B.25.HH,B.26.HH,B.27.HH);SR.27.HH
+# HT
+B.27.HT<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[17:32,8]);B.27.HT
+B.26.HT<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[17:32,9]);B.26.HT
+B.25.HT<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[17:32,10]);B.25.HT
+B.24.HT<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[17:32,11]);B.24.HT
+B.23.HT<-(1+R0)*(1+R1.H)*(1/16)*sum(paths5.1[17:32,12]);B.23.HT
+SR.27.HT<-(1-B.27.HT)/sum(B.23.HT,B.24.HT,B.25.HT,B.26.HT,B.27.HT);SR.27.HT
+# TH
+B.27.TH<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[33:48,8]);B.27.TH
+B.26.TH<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[33:48,9]);B.26.TH
+B.25.TH<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[33:48,10]);B.25.TH
+B.24.TH<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[33:48,11]);B.24.TH
+B.23.TH<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[33:48,12]);B.23.TH
+SR.27.TH<-(1-B.27.TH)/sum(B.23.TH,B.24.TH,B.25.TH,B.26.TH,B.27.TH);SR.27.TH
+# TT
+B.27.TT<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[49:64,8]);B.27.TT
+B.26.TT<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[49:64,9]);B.26.TT
+B.25.TT<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[49:64,10]);B.25.TT
+B.24.TT<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[49:64,11]);B.24.TT
+B.23.TT<-(1+R0)*(1+R1.T)*(1/16)*sum(paths5.1[49:64,12]);B.23.TT
+SR.27.TT<-(1-B.27.TT)/sum(B.23.TT,B.24.TT,B.25.TT,B.26.TT,B.27.TT);SR.27.TT
+
+
+# c
+# HT and TT is valuable swaption
+
+# d
