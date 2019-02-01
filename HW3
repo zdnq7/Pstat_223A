@@ -1,0 +1,153 @@
+# 1 
+# (a) min var portfolio weights
+c<-matrix(c(0.16,0.1,0.1,0.25),2,2);c
+u<-matrix(c(1,1),1,2);u
+m<-matrix(c(0.1,0.2),1,2);m
+c.inv<-solve(c);c.inv
+
+min.var.port<-function(er,c)
+{
+  min.v.p<-list()
+  u<-matrix(rep(1,length(er)),1,length(er),byrow=T)
+  c.inv<-solve(c)
+  # weights
+  w<-u%*%c.inv/(u%*%c.inv%*%t(u))[1]  
+  # global min of the bullet 
+  er.min<-er %*% t(w)
+  sd.min<-sqrt(w %*% c %*% t(w))
+  min.v.p$weights=w
+  min.v.p$min.er=er.min
+  min.v.p$min.sd=sd.min
+  return(min.v.p)
+}
+min<-min.var.port(er,covmat)
+
+# (b) portfolio weights w/ expected return 12%
+uv=0.12
+min.p.v.target.e<-function(er,c,uv){
+  min.p.v.t.e<-list()
+  c.inv<-solve(c)
+  # using proposition 5.10 from book
+  u <- rep(1, length(er))
+  er<-as.vector(er)
+  top <- cbind(2*c,er , u)
+  bot <- cbind(rbind(er, u), matrix(0,2,2))
+  A <- rbind(top, bot)
+  b.target <- as.matrix(c(rep(0, length(er)), uv, 1))
+  x <- solve(A, b.target)
+  w.b <- x[1:length(er)]
+  
+  # expected mu and sigma
+  er.wb<-t(er) %*% w.b
+  sd.wb<-sqrt(w.b %*% c %*% w.b)
+  min.p.v.t.e$weights=w.b
+  min.p.v.t.e$er.wb=er.wb
+  min.p.v.t.e$sd.wb=sd.wb
+  return(min.p.v.t.e)
+}
+min.p.v.target.e(m2,c2,.15)
+min.p.v.target.e(m,c,.12)
+# (c)                
+
+
+  w.max<-c(0,1)
+  a <- seq(from=-2,to=2,length=20)  		# convex combinations
+  we.mat <- a %o% as.vector(min.var.port(m,c)$w) + (1-a) %o% as.vector(w.max)	# rows are efficient portfolios
+  er.e <- m %*% t(we.mat)							# expected returns of efficient portfolios
+  er.e<-as.vector(er.e)
+  cov.effport <- we.mat %*% c %*% t(we.mat) # cov mat of efficient portfolios
+  sd.e <- sqrt(diag(cov.effport))					# sdof efficient portfolios
+  sd.e <- as.vector(sd.e)
+
+  plot(sd.e,er.e,xlim=c(0,max(sd.e)),ylim=c(0,max(er.e)),xlab="sigma", ylab="mu",pch=16)
+  # label part 1
+  points(sd.min[1],er.min[1],col=4,pch=16)
+  # label part 2
+  points(sd.wb[1],0.12,col=6,pch=16)
+  # no short-sell efficient frontier
+  er.ns<-we.mat[11:17,] %*% t(m)
+  er.ns<-as.vector(er.ns)
+  # choose positive weights
+  cov.effport.ns<-we.mat[11:17,] %*% c %*% t(we.mat[11:17,])
+  sd.ns<-sqrt(diag(cov.effport.ns))
+  sd.ns<-as.vector(sd.ns)
+  points(sd.ns,er.ns,col="yellow")
+  legend("topleft", c("part 1","part 2", "no short-sell"), pch=c(16,16,1),col = c(4,6,"yellow"))
+
+
+# (d) given a different cov matrix
+c1<-matrix(c(0.16,0.19,0.19,0.25),2,2)
+c1.inv<-solve(c1)
+min.var.port(m,c1) # part 1
+min.p.v.target.e(m,c1,.12)  # part 2
+
+# efficient frontier and no short-sell segment
+w.max<-c(0,1)
+a <- seq(from=-2,to=2,length=20)    	# convex combinations
+we.mat <- a %o% as.vector(min.var.port(m,c1)$w) + (1-a) %o% as.vector(w.max)	# rows are efficient portfolios
+er.e <- m %*% t(we.mat)							# expected returns of efficient portfolios
+er.e<-as.vector(er.e)
+cov.effport <- we.mat %*% c1 %*% t(we.mat) # cov mat of efficient portfolios
+sd.e <- sqrt(diag(cov.effport))					# sdof efficient portfolios
+sd.e <- as.vector(sd.e)
+
+plot(sd.e,er.e,xlim=c(0,max(sd.e)),ylim=c(0,max(er.e)),xlab="sigma", ylab="mu",pch=16)
+# label part 1
+points(min.var.port(m,c1)$min.sd,min.var.port(m,c1)$min.er,col=4,pch=16)
+# label part 2
+points(min.p.v.target.e(m,c1,.12)$sd.wb,0.12,col=6,pch=16)
+# no short-sell efficient frontier
+er.ns<-we.mat[11:12,] %*% t(m)
+er.ns<-as.vector(er.ns)
+# choose positive weights
+cov.effport.ns<-we.mat[11:12,] %*% c1 %*% t(we.mat[11:12,])
+sd.ns<-sqrt(diag(cov.effport.ns))
+sd.ns<-as.vector(sd.ns)
+points(sd.ns,er.ns,col="green")
+legend("topleft", c("part 1","part 2", "no short-sell"), pch=c(16,16,1),col = c(4,6,"green"))
+
+
+# 2
+c2<-matrix(c(0.09,-0.03,0,
+             -0.03,0.16,0.04,
+             0,0.04,0.16),3,3,byrow=T)
+c2.inv<-solve(c2)
+m2<-matrix(c(0.1,0.12,0.16),1,3,byrow=T)
+
+# (a)
+min.var.port(er=m2,c=c2) 
+# (b)
+min.p.v.target.e(m2,c2,.15)  
+
+# (c) using proposition 5.12: 
+# gamma*w*C=m-mu*u
+rf=0.04
+u2<-matrix(c(1,1,1),1,3,byrow=T)
+gamma.w<-(m2-rf*u2) %*% c2.inv  # gamma times w
+# since u %*% t(w) = 1, so gamma=sum(gamma.w)=1.958
+w.mp<-gamma.w/sum(gamma.w)
+e.mp<-m2 %*% t(w.mp)
+sd.mp<-sqrt(w.mp %*% c2 %*% t(w.mp))
+
+
+#num.1<-matrix(c(1,u%*%c.inv%*%t(er),uv,er%*%c.inv%*%t(er)),2,2,byrow=T) #numerator matrix 1
+#num.2<-matrix(c(u%*%c.inv%*%t(er),1,er%*%c.inv%*%t(er),uv),2,2,byrow=T) #numerator matrix 2
+# denomator matrix
+#denom<-matrix(c(u%*%c.inv%*%t(u),u%*%c.inv%*%t(er),er%*%c.inv%*%t(u),er%*%c.inv%*%t(er)),2,2,byrow=T)
+#  take determiant and multiple
+#w.b<-(det(num.1)%*%u%*%c.inv+det(num.2)%*%er%*%c.inv)/det(denom)
+
+prob<-c(0.1,0.3,0.4,0.15,0.05)
+s1.1<-c(30,15,25,20,10)
+sm.1<-c(112,108,104,100,92)
+cor<-cor(s1.1,sm.1)
+r.m<-sum(prob*(sm.1-100)/100)
+r.m.sq<-sum(prob*((sm.1-100)/100)^2)
+sd.m<-sqrt(r.m.sq-r.m^2)
+cor;sd.m;r.m
+
+
+c1<-matrix(c(1,-1),1,2,byrow=T);c1
+c2<-matrix(c(2/3,-1/3,-1/3,2/3),2,2,byrow=T);c2
+c1 %*% c2 %*% t(c1)  
+  
