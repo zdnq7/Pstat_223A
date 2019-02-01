@@ -1,0 +1,126 @@
+#Implement the binomial tree option pricing algorithm for European options in your fa- vorite software program#
+
+binomCall <- function(n,S0,K,r,u,d)
+{
+  q<- (1+r-d)/(u-d)
+  STbin <- S0*d^n*(u/d)^(0:n)  # terminal stock values
+  pbin <- dbinom(0:n,n,q)   # probabilities of terminal nodes
+  price <- exp(-r*n)*sum(pbin*pmax(STbin-K,0))
+  return (price)
+}
+binomCall(8,10,10.5,0.01,1.05,0.95)
+x<-binomCall(n=26, S0=100, r=0.002, d=100/101, u=1.01)
+x
+
+binomPut <- function(n=25,S0,K,r=0.002,d=100/101,u=1.01)
+{
+  q<- (1+r-d)/(u-d)
+  STbin <- S0*d^n*(u/d)^(0:n)  # terminal stock values
+  pbin <- dbinom(0:n,n,q)   # probabilities of terminal nodes
+  price <- exp(-r*n)*sum(pbin*pmax(K-STbin,0))
+  # uses the Call payoff (S_T - K)_+ (be sure to use PMAX for vectors)
+  return(price)
+}
+binomPut(K=100)
+
+price<-vector()
+  for (i in 85:110) {
+    p<-binomPut(S0=100*1.1, K=i)
+    price[i]<-p
+  }
+
+price1<-vector()
+for (i in 85:110) {
+  p1<-binomPut(S0=100*(100/101), K=i)
+  price1[i]<-p1
+}
+x<-85:110
+delta<-(price[x]-price1[x])/(101-99)
+delta
+plot(x,delta)
+par(mfrow=c(2,1))
+a<-85:110
+plot(a, price[a],type="l", xlab="Strike Price", ylab="Put Premium")
+price
+binomDelta <- function(n=26,S0=100,K,r=0.002,d=100/101,u=1.01)
+{
+  q<- (1+r-d)/(u-d)
+  STbin <- S0*d^n*(u/d)^(0:n)  # terminal stock values
+  pbin <- dbinom(0:n,n,q)   # probabilities of terminal nodes
+  x1h<-(1/(1+r))*(q*pmax(K-102,0)+(1-q)*pmax(K-100,0))
+  x1t<-(1/(1+r))*(q*pmax(K-100,0)+(1-q)*pmax(K-98,0))
+  delta <- (x1h-x1t)/(101-99)
+  return( delta)
+}
+binomDelta(K=85)
+binomDelta(K=110)
+
+delta<-vector()
+  for (a in 85:110) {
+   p<-binomDelta(K=a)
+   delta[a]<-p
+}
+a<-85:110
+plot(a, delta[a],type="l", xlab="Strike Price", ylab="Delta")
+
+(1.46*0.7+0.3*4.85)/(1.03)
+5*.3/1.03
+5/1.03
+(1.456*0.7+4.854*0.3)/1.03
+4.854/1.03
+(2.4*0.7+4.71*0.3)/1.03
+(2.4-4.7)/(63.6-57.6)
+3+0.38*60
+25.8*1.03-0.38*63.6
+(1.456-4.854)/(67.42-61.06)
+2.4+0.534*63.6
+-0.534*61.06+36.26*1.03
+4.85*1.03
+
+
+library(gtools)
+install.packages("gtools")
+?permutations
+
+
+
+
+N=8
+u=1.05
+d=0.95
+B=11.5
+K=10.5
+r=0.01
+S.0=10
+barrier.price(S.0=10,B=0,K=10.5,N=8,u=1.05,d=0.95,r=0.01)
+
+barrier.price<-function(S.0,B,K,N,u,d,r){
+  q<-(1+r-d)/(u-d)
+  paths<-permutations(2,N,c("H","T"),repeats.allowed=TRUE)
+  paths<-cbind(rep(S.0,256),paths)
+  prob<-vector()
+  for (j in 1:256) {
+    prob[j]<-prod(paths[j,])/10
+  }
+  for (i in 1:8){
+  for (j in 1:256){
+    if (paths[j,i+1]==q){
+      paths[j,i+1]=paths[j,i]*u
+    }
+    if (paths[j,i+1]==1-q){
+      paths[j,i+1]=paths[j,i]*d
+    }  
+  }
+  }
+  payoff<-vector()
+    for (i in 2:9) {
+    for (j in 1:256){
+      if (paths[j,i]>B){
+        payoff[j]=pmax((paths[j,9]-K),0)
+    }
+  }}
+  payoff[is.na(payoff)]<-0
+  price<-sum(prob*payoff)/(1+r)^N
+  return(price)
+}
+
