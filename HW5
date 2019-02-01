@@ -1,0 +1,288 @@
+#1
+# b
+S0=50
+u=1.06
+d=0.98
+r=0.01
+K=60
+N=20
+q<-(1+r-d)/(u-d)
+
+M<-25
+U<-runif(M)
+payoff<-vector()
+S<-vector()
+for (j in 1:M){
+  S[j]<-S0*(u/d)^qbinom(U[j],N,q)*d^N
+  payoff[j]<-exp(-r*N)*pmax(K-S[j],0)
+}
+# point estimate
+mean(payoff)
+# sample standard deviation
+(s<-sd(payoff))
+# C.I.
+(CI<-c(mean(payoff)-1.96*s/sqrt(M),mean(payoff)+1.96*s/sqrt(M)))
+
+# true price of option
+binomPut <- function(n,S0,K,r,d,u)
+{
+  q<- (1+r-d)/(u-d)
+  STbin <- S0*d^n*(u/d)^(0:n)  # terminal stock values
+  pbin <- dbinom(0:n,n,q)   # probabilities of terminal nodes
+  price <- exp(-r*n)*sum(pbin*pmax(K-STbin,0))
+  # uses the Call payoff (S_T - K)_+ (be sure to use PMAX for vectors)
+  return(price)
+}
+binomPut(n=20,S0=50,K=60,r=0.01,d=0.98,u=1.06)
+
+
+# c, repeat b 5 times
+est.c<-vector()
+for (runs in 1:5){
+U<-runif(M)
+payoff<-vector()
+S<-vector()
+for (j in 1:M){
+  S[j]<-S0*(u/d)^qbinom(U[j],N,q)*d^N
+  payoff[j]<-exp(-r*N)*pmax(K-S[j],0)
+}
+est.c[runs]<-mean(payoff)
+}
+# point estimate
+mean(est.c)
+# sample standard deviation
+(s<-sd(est.c))
+# C.I.
+(CI<-c(mean(payoff)-1.96*s/sqrt(5),mean(payoff)+1.96*s/sqrt(5)))
+
+# d, repeat with new K=45
+K=45
+M<-25
+est.d<-vector()
+for (runs in 1:5){
+U<-runif(M)
+payoff<-vector()
+S<-vector()
+for (j in 1:M){
+  S[j]<-S0*(u/d)^qbinom(U[j],N,q)*d^N
+  payoff[j]<-exp(-r*N)*pmax(K-S[j],0)
+}
+# point estimate
+est.d[runs]<-mean(payoff)
+}
+(mean(est.d))
+# sample standard deviation
+(s<-sd(est.d))
+# C.I.
+(CI<-c(mean(payoff)-1.96*s/sqrt(5),mean(payoff)+1.96*s/sqrt(5)))
+
+
+# 2 Asian Option
+
+N<-30
+S0=50
+u=1.06
+d=0.98
+r=0.01
+K=55
+
+#antit.est<-vector()
+#antit.est.Y<-vector()
+#for (runs in 1:100){
+run.even<-vector()  
+run.odd<-vector()   
+Y.even<-vector()    
+Y.odd<-vector()     
+# for each generating of binomial RV X in (1,0)=(up,down), prices simulated using X 
+# are stored in run.even, prices simulated using 1-X are stored in run.odd.
+# combine run.even and run.odd will have a vector of samples of option price using 
+# antithetic variables X and 1-X.
+for (a in 1:100){
+  U<-runif(N)
+  for (i in 1:length(U)){
+    if (U[i]<3/8){
+      U[i]<-1}
+    else {
+      U[i]<-0}
+  }
+  S<-S0
+  path.even<-vector()                     # one stock price path
+    for (j in 1:length(U)){
+      S<-S*u^U[j]*d^(1-U[j])
+      path.even[j]=S
+    }
+  payoff.even<-vector()
+  Y.even[a]<-sum(path.even)/length(path.even)
+  payoff.even<-pmax(Y.even[a]-K,0)
+  price.even<-exp(-r*N)*payoff.even
+  run.even[a]<-price.even                # store 100 prices here
+  
+  
+  S<-S0 
+  path.odd<-vector()
+    for (i in 1:length(U)){
+      S<-S*u^(1-U[i])*d^U[i]
+      path.odd[i]=S
+    }
+  payoff.odd<-vector()
+  Y.odd[a]<-sum(path.odd)/length(path.odd)
+  payoff.odd<-pmax(Y.odd[a]-K,0)
+  price.odd<-exp(-r*N)*payoff.odd
+  run.odd[a]<-price.odd
+  
+} 
+run<-c(run.odd,run.even)
+Y<-c(Y.even,Y.odd)
+antit.est[runs]<-mean(run)
+antit.est.Y[runs]<-mean(Y)
+}
+hist(antit.est.Y)
+
+# sample mean of price at t=0
+mean(antit.est)
+# sample SD of price at t=0
+sd(antit.est)
+
+
+# 3
+K=45
+T=1/2
+S0=50
+sigma=0.2
+r=0.04
+# (a)
+M<-50
+Z<-rnorm(M)
+price<-vector()
+S<-vector()
+for (j in 1:M){
+  S[j]<-S0*exp( (r-sigma^2/2)*T + sigma*sqrt(T)*Z[j])
+  price[j]<-exp(-r*T)*pmax(S[j]-K,0)
+}
+# point estimate
+(mean(price))
+# sample standard deviation
+(s<-sd(price))
+# C.I.
+c(mean(price)-1.96*s/sqrt(M),mean(price)+1.96*s/sqrt(M))
+
+# b
+M<-50
+S0=50
+U<-seq(from=0.01,to=0.99,by=0.02)
+Z<vector()
+Z<-qnorm(U)
+
+price.b<-vector()
+S<-vector()
+for (j in 1:length(U)){
+  S[j]<-S0*exp( (r-sigma^2/2)*T + sigma*sqrt(T)*Z[j])
+  price.b[j]<-exp(-r*T)*pmax(S[j]-K,0)
+}
+# point estimate
+mean(price.b)
+# sample standard deviation
+(s<-sd(price.b))
+# C.I.
+c(mean(price.b)-1.96*s/sqrt(M),mean(price.b)+1.96*s/sqrt(M))
+
+# 4 
+
+U<-runif(50)
+U.bin1<-U[1:10]*0.2+0
+U.bin2<-U[11:20]*0.2+0.2
+U.bin3<-U[21:30]*0.2+0.4
+U.bin4<-U[31:40]*0.2+0.6
+U.bin5<-U[41:50]*0.2+0.8
+
+Z<-qnorm(c(U.bin1,U.bin2,U.bin3,U.bin4,U.bin5))
+price.b<-vector()
+S<-vector()
+for (j in 1:length(Z)){
+  S[j]<-S0*exp( (r-sigma^2/2)*T + sigma*sqrt(T)*Z[j])
+  price[j]<-exp(-r*T)*pmax(S[j]-K,0)
+}
+# point estimate
+mean(price)
+# sample standard deviation
+# use equation 4.39 in Glasserman
+(s<-sqrt( sum(0.2 * (var(S[1:10]) + var(S[11:20])) + var(S[21:30])
+              + var(S[31:40] + var(S[41:50])) )))
+# C.I. using equation 4.40 in Glasserman
+c(mean(price)-1.96*s/sqrt(length(price)),mean(price)+1.96*s/sqrt(length(price)))
+
+# b
+str.est<-vector()
+for (runs in 1:100){
+U<-runif(50)
+U.stra<-vector()
+for (i in 1:50){
+  U.stra[i]<-(i-1+U[i])/50
+}
+
+Z<-qnorm(U.stra)
+price.b<-vector()
+S<-vector()
+for (j in 1:length(Z)){
+  S[j]<-S0*exp( (r-sigma^2/2)*T + sigma*sqrt(T)*Z[j])
+  price.b[j]<-exp(-r*T)*pmax(S[j]-K,0)
+}
+# point estimate for each run
+str.est[runs]<-mean(price.b)
+}
+# sample estimate
+mean(str.est)
+# sample standard deviation
+(s<-sd(str.est) )
+# C.I. using equation 4.40 in Glasserman
+c(mean(str.est)-1.96*s/sqrt(length(str.est)),
+  mean(str.est)+1.96*s/sqrt(length(str.est)))
+
+
+# 5
+T=3
+h=1/12
+k=1
+r.bar=0.06
+sigma=0.04
+# a
+r.path<-function(R0,T,h,k,r.bar,sigma){
+Z<-rnorm(T/h)
+R<-R0
+R.path<-vector()
+for (j in 1:length(Z)) {
+  R<-exp(-k*h)*R0+(1-exp(-k*h))*r.bar+
+      Z[j]*sqrt(1-exp(-2*k*h))*sqrt(sigma^2/(2*k))
+  R.path[j]=R
+}  
+return (R.path)
+}
+sample1<-r.path(R0=0.04,T=3,h=1/12,k=1,r.bar=0.06,sigma=0.04)
+sample2<-r.path(R0=0.04,T=3,h=1/12,k=1,r.bar=0.06,sigma=0.04)
+plot(sample1,type="l",ylab="R")
+points(sample2,type="l",col=2)
+
+# b
+est.bond<-vector()
+for (runs in 1:200){
+  for (i in 1:36){
+    sample<-r.path(R0=0.04,T=3,h=1/12,k=1,r.bar=0.06,sigma=0.04)
+    price<-exp( -sum( sample[i]*(1/12) ) )
+  }
+  est.bond[runs]<-price
+}
+## mean
+(mean(est.bond))
+## sd 
+(s<-sd(est.bond))
+## CI
+c(mean(est.bond)-2.576*s/200,mean(est.bond)+2.576*s/200)
+
+
+x<-runif(20)
+for (i in 1:length(x)){
+  if (x[i]>2/3){
+    x[i]<-1}
+  else {
+    x[i]<-0}
+  }
